@@ -13,7 +13,7 @@ export default function Chat() {
   
   // In AI SDK v7, useChat returns UseChatHelpers which contains messages, sendMessage, stop, and status.
   // Input state and handlers are managed locally.
-  const { messages, sendMessage, stop, status } = useChat();
+  const { messages, sendMessage, stop, status } = useChat({ maxSteps: 5 });
   const [input, setInput] = useState("");
 
   const displayName = isSignedIn && user ? `, ${user.firstName || user.username || "User"}` : "";
@@ -133,6 +133,27 @@ export default function Chat() {
                       .join("")}
                   </ReactMarkdown>
                 </div>
+                
+                {/* NEW: Render Tool Invocations so the screen is never blank */}
+                {m.parts && m.parts.some(p => p.type === 'tool-invocation' || (p.type as string).startsWith('tool-')) && (
+                  <div className="mt-2 space-y-2">
+                    {m.parts
+                      .filter((p): p is any => p.type === 'tool-invocation' || (p.type as string).startsWith('tool-'))
+                      .map((toolInvocation) => {
+                      const { toolCallId, toolName, state } = toolInvocation;
+                      
+                      return (
+                        <div 
+                          key={toolCallId} 
+                          className="text-xs font-mono bg-gray-900 border border-gray-800 rounded-lg p-2 text-brand w-fit flex items-center gap-2"
+                        >
+                          <span className="animate-pulse">●</span>
+                          <span>Tool [{toolName || (toolInvocation.type as string).replace('tool-', '')}]: {state}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           ))}
