@@ -124,108 +124,108 @@ export default function Chat() {
         {messages.length > 0 && (
           <div className="flex-1 overflow-y-auto scrollbar-hide py-4 sm:py-6">
             <div className="max-w-3xl mx-auto px-3 sm:px-5 md:px-6 space-y-6 sm:space-y-8">
-              <AnimatePresence initial={false}>
-                {messages.map((m, index) => {
-                  const isUser = m.role === "user";
-                  const text = getMessageText(m);
+            <AnimatePresence initial={false}>
+              {messages.map((m, index) => {
+                const isUser = m.role === "user";
+                const text = getMessageText(m);
 
-                  return (
-                    <motion.div
-                      key={m.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    >
-                      {isUser ? (
-                        /* ── User Bubble ── */
-                        <div className="flex justify-end">
-                          <div className="flex items-end gap-2 sm:gap-3 max-w-[88%] sm:max-w-[80%]">
-                            <div className="bg-[#1e1e1e] border border-white/[0.08] rounded-2xl rounded-br-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-lg">
-                              <p className="text-gray-100 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{text}</p>
-                            </div>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-gray-700 flex items-center justify-center shrink-0 mb-0.5 overflow-hidden bg-gray-800">
-                              {user?.imageUrl ? (
-                                <img src={user.imageUrl} alt="You" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                              ) : (
-                                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300" />
-                              )}
-                            </div>
+                return (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    {isUser ? (
+                      /* ── User Bubble ── */
+                      <div className="flex justify-end">
+                        <div className="flex items-end gap-2 sm:gap-3 max-w-[88%] sm:max-w-[80%]">
+                          <div className="bg-[#1e1e1e] border border-white/[0.08] rounded-2xl rounded-br-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-lg">
+                            <p className="text-gray-100 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">{text}</p>
+                          </div>
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-gray-700 flex items-center justify-center shrink-0 mb-0.5 overflow-hidden bg-gray-800">
+                            {user?.imageUrl ? (
+                              <img src={user.imageUrl} alt="You" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300" />
+                            )}
                           </div>
                         </div>
-                      ) : (
-                        /* ── Assistant Answer ── */
-                        <div className="flex gap-2 sm:gap-4">
-                          {/* Brain icon — hidden on very small screens */}
-                          <div className="shrink-0 mt-1 hidden xs:flex sm:flex">
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-                              <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400" />
-                            </div>
+                      </div>
+                    ) : (
+                      /* ── Assistant Answer ── */
+                      <div className="flex gap-2 sm:gap-4">
+                        {/* Brain icon — hidden on very small screens */}
+                        <div className="shrink-0 mt-1 hidden xs:flex sm:flex">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
+                            <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400" />
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
+                          {/* Label + loading dots */}
+                          <div className="flex items-center gap-2">
+                            <BrainCircuit className="w-4 h-4 text-pink-400 sm:hidden" />
+                            <span className="text-xs font-semibold text-pink-400 uppercase tracking-widest">Answer Engine</span>
+                            {isLoading && index === messages.length - 1 && (
+                              <span className="flex gap-1">
+                                {[0, 1, 2].map((i) => (
+                                  <motion.span
+                                    key={i}
+                                    className="w-1 h-1 rounded-full bg-pink-400"
+                                    animate={{ opacity: [0.3, 1, 0.3] }}
+                                    transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                                  />
+                                ))}
+                              </span>
+                            )}
                           </div>
 
-                          <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-                            {/* Label + loading dots */}
-                            <div className="flex items-center gap-2">
-                              <BrainCircuit className="w-4 h-4 text-pink-400 sm:hidden" />
-                              <span className="text-xs font-semibold text-pink-400 uppercase tracking-widest">Answer Engine</span>
-                              {isLoading && index === messages.length - 1 && (
-                                <span className="flex gap-1">
-                                  {[0, 1, 2].map((i) => (
-                                    <motion.span
+                          {/* ── Source chips ABOVE the answer (Perplexity-style) ── */}
+                          {(() => {
+                            const sourcesPart = m.parts?.find(
+                              (p: any) => p.type === "custom" && p.kind === "source.chips"
+                            );
+                            const sources = (sourcesPart as any)?.providerMetadata?.sources as
+                              | Array<{ title: string; url: string }>
+                              | undefined;
+                            if (!sources?.length) return null;
+                            return (
+                              <div className="flex gap-2 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-0.5 scrollbar-hide snap-x sm:snap-none">
+                                {sources.map((s, i) => {
+                                  let domain = "";
+                                  try { domain = new URL(s.url).hostname.replace("www.", ""); } catch {}
+                                  return (
+                                    <motion.a
                                       key={i}
-                                      className="w-1 h-1 rounded-full bg-pink-400"
-                                      animate={{ opacity: [0.3, 1, 0.3] }}
-                                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                                    />
-                                  ))}
-                                </span>
-                              )}
-                            </div>
+                                      href={s.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      initial={{ opacity: 0, y: 6 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: i * 0.07, ease: "easeOut" }}
+                                      className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] hover:border-pink-500/25 transition-all cursor-pointer shrink-0 snap-start min-w-0"
+                                    >
+                                      <img
+                                        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
+                                        className="w-4 h-4 rounded-sm bg-white/10 shrink-0"
+                                        alt=""
+                                      />
+                                      <div className="min-w-0">
+                                        <p className="text-[11px] text-gray-500 truncate">{domain || 'source'}</p>
+                                        <p className="text-xs text-gray-300 group-hover:text-white font-medium line-clamp-1 transition-colors">{s.title}</p>
+                                      </div>
+                                      <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-pink-400 transition-colors shrink-0 ml-0.5" />
+                                    </motion.a>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
 
-                            {/* ── Source chips ABOVE the answer (Perplexity-style) ── */}
-                            {(() => {
-                              const sourcesPart = m.parts?.find(
-                                (p: any) => p.type === "custom" && p.kind === "source.chips"
-                              );
-                              const sources = (sourcesPart as any)?.providerMetadata?.sources as
-                                | Array<{ title: string; url: string }>
-                                | undefined;
-                              if (!sources?.length) return null;
-                              return (
-                                <div className="flex gap-2 overflow-x-auto sm:overflow-visible sm:flex-wrap pb-0.5 scrollbar-hide snap-x sm:snap-none">
-                                  {sources.map((s, i) => {
-                                    let domain = "";
-                                    try { domain = new URL(s.url).hostname.replace("www.", ""); } catch { }
-                                    return (
-                                      <motion.a
-                                        key={i}
-                                        href={s.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        initial={{ opacity: 0, y: 6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.07, ease: "easeOut" }}
-                                        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] hover:border-pink-500/25 transition-all cursor-pointer shrink-0 snap-start min-w-0"
-                                      >
-                                        <img
-                                          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
-                                          className="w-4 h-4 rounded-sm bg-white/10 shrink-0"
-                                          alt=""
-                                        />
-                                        <div className="min-w-0">
-                                          <p className="text-[11px] text-gray-500 truncate">{domain || 'source'}</p>
-                                          <p className="text-xs text-gray-300 group-hover:text-white font-medium line-clamp-1 transition-colors">{s.title}</p>
-                                        </div>
-                                        <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-pink-400 transition-colors shrink-0 ml-0.5" />
-                                      </motion.a>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-
-                            {/* ── Answer card with proper prose typography ── */}
-                            <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-xl backdrop-blur-sm">
-                              <div className="prose prose-invert max-w-none
+                          {/* ── Answer card with proper prose typography ── */}
+                          <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-xl backdrop-blur-sm">
+                            <div className="prose prose-invert max-w-none
                               prose-p:text-gray-300 prose-p:leading-7
                               prose-headings:text-white prose-headings:font-semibold
                               prose-h2:text-lg prose-h2:mt-5 prose-h2:mb-2
@@ -238,90 +238,90 @@ export default function Chat() {
                               prose-hr:border-white/10
                               prose-code:text-pink-300 prose-code:bg-white/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
                               prose-pre:p-0 prose-pre:bg-transparent prose-pre:rounded-none">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    a: ({ node, ...props }: any) => (
-                                      <a target="_blank" rel="noopener noreferrer" {...props} />
-                                    ),
-                                    code: ({ node, className, children, ...props }: any) => {
-                                      const match = /language-(\w+)/.exec(className || "");
-                                      const isBlock = !!match || String(children).includes('\n');
-                                      return isBlock ? (
-                                        <div className="my-4 rounded-xl overflow-hidden border border-white/10 not-prose">
-                                          <div className="flex items-center px-4 py-2 bg-white/5 border-b border-white/10">
-                                            <span className="text-xs font-mono text-gray-400">{match ? match[1] : "code"}</span>
-                                          </div>
-                                          <pre className="p-4 overflow-x-auto text-sm font-mono text-gray-200 bg-[#0a0a0a] m-0 rounded-none">
-                                            <code {...props}>{children}</code>
-                                          </pre>
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  a: ({ node, ...props }: any) => (
+                                    <a target="_blank" rel="noopener noreferrer" {...props} />
+                                  ),
+                                  code: ({ node, className, children, ...props }: any) => {
+                                    const match = /language-(\w+)/.exec(className || "");
+                                    const isBlock = !!match || String(children).includes('\n');
+                                    return isBlock ? (
+                                      <div className="my-4 rounded-xl overflow-hidden border border-white/10 not-prose">
+                                        <div className="flex items-center px-4 py-2 bg-white/5 border-b border-white/10">
+                                          <span className="text-xs font-mono text-gray-400">{match ? match[1] : "code"}</span>
                                         </div>
-                                      ) : (
-                                        <code className="bg-white/5 text-pink-300 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {...props}>{children}</code>
-                                      );
-                                    },
-                                    h2: ({ node, children, ...props }: any) => (
-                                      <h2 className="text-white font-semibold text-lg mt-6 mb-2 pb-2 border-b border-white/10" {...props}>{children}</h2>
-                                    ),
-                                    h3: ({ node, children, ...props }: any) => (
-                                      <h3 className="text-white font-semibold text-base mt-4 mb-1" {...props}>{children}</h3>
-                                    ),
-                                  }}
-                                >
-                                  {text.split('### Follow-ups')[0]}
-                                </ReactMarkdown>
+                                        <pre className="p-4 overflow-x-auto text-sm font-mono text-gray-200 bg-[#0a0a0a] m-0 rounded-none">
+                                          <code {...props}>{children}</code>
+                                        </pre>
+                                      </div>
+                                    ) : (
+                                      <code className="bg-white/5 text-pink-300 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {...props}>{children}</code>
+                                    );
+                                  },
+                                  h2: ({ node, children, ...props }: any) => (
+                                    <h2 className="text-white font-semibold text-lg mt-6 mb-2 pb-2 border-b border-white/10" {...props}>{children}</h2>
+                                  ),
+                                  h3: ({ node, children, ...props }: any) => (
+                                    <h3 className="text-white font-semibold text-base mt-4 mb-1" {...props}>{children}</h3>
+                                  ),
+                                }}
+                              >
+                                {text.split('### Follow-ups')[0]}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+
+                          {/* ── Follow Up Chips ── */}
+                          {text.includes('### Follow-ups') && (
+                            <div className="mt-4 space-y-2">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Sparkles className="w-4 h-4 text-pink-400" />
+                                <span className="text-xs font-medium text-gray-400">Related Questions</span>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                {text.split('### Follow-ups')[1]
+                                  .split('\n')
+                                  .filter(line => line.trim().startsWith('-') || line.trim().match(/^\d+\./))
+                                  .map((q, i) => {
+                                    const cleanQuestion = q.replace(/^-\s*/, '').replace(/^\d+\.\s*/, '').trim();
+                                    if (!cleanQuestion) return null;
+                                    return (
+                                      <motion.button
+                                        key={i}
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        onClick={() => {
+                                          setInput(cleanQuestion);
+                                          // Small delay to allow state update before submitting
+                                          setTimeout(() => {
+                                            if (textareaRef.current) {
+                                              textareaRef.current.focus();
+                                              // Simulate form submission
+                                              sendMessage({ text: cleanQuestion });
+                                              setInput("");
+                                            }
+                                          }, 50);
+                                        }}
+                                        className="text-left w-full px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] hover:border-pink-500/30 text-sm text-gray-300 hover:text-white transition-all cursor-pointer group flex items-start gap-3"
+                                      >
+                                        <span className="text-pink-400/50 group-hover:text-pink-400 mt-0.5 transition-colors">↳</span>
+                                        <span className="flex-1">{cleanQuestion}</span>
+                                      </motion.button>
+                                    );
+                                  })}
                               </div>
                             </div>
-
-                            {/* ── Follow Up Chips ── */}
-                            {text.includes('### Follow-ups') && (
-                              <div className="mt-4 space-y-2">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <Sparkles className="w-4 h-4 text-pink-400" />
-                                  <span className="text-xs font-medium text-gray-400">Related Questions</span>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  {text.split('### Follow-ups')[1]
-                                    .split('\n')
-                                    .filter(line => line.trim().startsWith('-') || line.trim().match(/^\d+\./))
-                                    .map((q, i) => {
-                                      const cleanQuestion = q.replace(/^-\s*/, '').replace(/^\d+\.\s*/, '').trim();
-                                      if (!cleanQuestion) return null;
-                                      return (
-                                        <motion.button
-                                          key={i}
-                                          initial={{ opacity: 0, y: 5 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          transition={{ delay: i * 0.1 }}
-                                          onClick={() => {
-                                            setInput(cleanQuestion);
-                                            // Small delay to allow state update before submitting
-                                            setTimeout(() => {
-                                              if (textareaRef.current) {
-                                                textareaRef.current.focus();
-                                                // Simulate form submission
-                                                sendMessage({ text: cleanQuestion });
-                                                setInput("");
-                                              }
-                                            }, 50);
-                                          }}
-                                          className="text-left w-full px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] hover:border-pink-500/30 text-sm text-gray-300 hover:text-white transition-all cursor-pointer group flex items-start gap-3"
-                                        >
-                                          <span className="text-pink-400/50 group-hover:text-pink-400 mt-0.5 transition-colors">↳</span>
-                                          <span className="flex-1">{cleanQuestion}</span>
-                                        </motion.button>
-                                      );
-                                    })}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
               <div ref={bottomRef} />
             </div>
           </div>
@@ -390,8 +390,8 @@ export default function Chat() {
               isLoading
                 ? "bg-[linear-gradient(45deg,#4285f4,#9b72cb,#d96570,#9b72cb,#4285f4)] bg-[length:200%_200%] animate-[gradient_3s_ease_infinite] blur-md opacity-80"
                 : input || textareaRef.current?.matches(':focus')
-                  ? "bg-[linear-gradient(45deg,#4285f4,#9b72cb,#d96570,#9b72cb,#4285f4)] bg-[length:200%_200%] animate-[gradient_8s_ease_infinite] blur-sm opacity-60"
-                  : "bg-white/5 opacity-100"
+                ? "bg-[linear-gradient(45deg,#4285f4,#9b72cb,#d96570,#9b72cb,#4285f4)] bg-[length:200%_200%] animate-[gradient_8s_ease_infinite] blur-sm opacity-60"
+                : "bg-white/5 opacity-100"
             )} />
 
             <div className="relative z-10 bg-[#111] border border-white/[0.08] rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden transition-colors duration-300">
