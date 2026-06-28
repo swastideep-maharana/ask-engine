@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   /* OKLCH colors guarantee smooth, premium dark-mode contrast */
@@ -13,21 +14,67 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Custom dark scrollbar styling */
+/* Completely hide all scrollbars globally for a sleek look */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+* {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
-::-webkit-scrollbar-thumb {
-  background: oklch(0.25 0.02 285);
-  border-radius: 9999px;
+/* Force hide the Next.js DevTools indicator and build toasts */
+#next-build-indicator,
+nextjs-portal,
+[data-nextjs-toast],
+.nextjs-toast,
+#next-route-announcer {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.35 0.02 285);
+/* Aceternity Aurora Effect */
+@keyframes aurora {
+  from {
+    background-position: 50% 50%, 50% 50%;
+  }
+
+  to {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.aurora-gradient-bg {
+  background-image:
+    repeating-linear-gradient(100deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 7%, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 0) 12%, rgba(0, 0, 0, 0) 16%),
+    repeating-linear-gradient(100deg, var(--color-brand) 10%, oklch(0.6 0.2 300) 15%, oklch(0.7 0.1 270) 20%, oklch(0.5 0.3 320) 25%, var(--color-brand) 30%);
+  background-size: 300% 200%;
+  background-position: 50% 50%, 50% 50%;
+  filter: blur(20px);
+  animation: aurora 60s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.mask-radial-gradient {
+  mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
 }
