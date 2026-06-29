@@ -1,95 +1,88 @@
-import { streamText, toUIMessageStream, createUIMessageStreamResponse } from 'ai';
-import { groq } from '@ai-sdk/groq';
+import { streamText, tool, convertToModelMessages, isStepCount } from 'ai';
+import { createGroq } from '@ai-sdk/groq';
+import { z } from 'zod';
 import FirecrawlApp from '@mendable/firecrawl-js';
+// NEW IMPORTS: Clerk for Auth, Drizzle for Database
+import { auth } from '@clerk/nextjs/server';
+import { db } from '../../../db';
+import { messages as messagesTable, chats } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
 
-const firecrawl = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+const app = new FirecrawlApp({ apiKey: process.env.FIRECRAWL_API_KEY });
 
-export const maxDuration = 60;
+export const maxDuration = 60; 
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const messages: any[] = body.messages ?? [];
-
-  // ── Extract user query (SDK v7 sends messages with `parts`, not `content`) ──
-  const lastMessage = messages[messages.length - 1];
-  let userQuery = '';
-
-  if (typeof lastMessage?.content === 'string') {
-    userQuery = lastMessage.content;
-  } else if (Array.isArray(lastMessage?.parts)) {
-    userQuery = lastMessage.parts
-      .filter((p: any) => p.type === 'text')
-      .map((p: any) => p.text)
-      .join(' ');
-  } else if (typeof lastMessage?.text === 'string') {
-    userQuery = lastMessage.text;
+  // 1. SECURITY: Block anyone who isn't logged in via Clerk
+  const { userId } = await auth();
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
-  console.log(`🌍 Searching the web for: "${userQuery}"`);
+  // We are now expecting the frontend to send a 'chatId' along with the messages
+  const { messages, chatId } = await req.json();
 
-  // ── Firecrawl web search ──
-  let webContext = 'No specific web results found. Answer from training knowledge.';
-  try {
-    if (userQuery.trim()) {
-      const results: any = await firecrawl.search(userQuery, {
-        limit: 3,
-        scrapeOptions: { formats: ['markdown'] },
-      });
-      const pages = results?.web ?? results?.data ?? [];
-      if (pages.length > 0) {
-        console.log(`✅ Firecrawl returned ${pages.length} result(s).`);
-        webContext = pages
-          .map((page: any, i: number) => {
-            const body = page.markdown ?? page.content ?? page.text ?? '';
-            return `[Source ${i + 1}] ${page.title ?? 'Unknown'} (${page.url})\n${body.substring(0, 3000)}`;
-          })
-          .join('\n\n---\n\n');
-      } else {
-        console.log('⚠️ Firecrawl returned no results. Shape:', JSON.stringify(Object.keys(results ?? {})));
-      }
-    }
-  } catch (err) {
-    console.error('🔥 Firecrawl Error:', err);
+  // 2. DATABASE: Save the user's message
+  const lastUserMessage = messages[messages.length - 1];
+  
+  // If we have a chatId, we save the user's message immediately
+  if (chatId) {
+    await db.insert(messagesTable).values({
+      chatId: chatId,
+      role: 'user',
+      content: lastUserMessage.content,
+    });
   }
 
-  // ── Normalise messages for the model (parts → content string) ──
-  const modelMessages = messages.map((m: any) => {
-    let content: string = '';
-    if (typeof m.content === 'string') {
-      content = m.content;
-    } else if (Array.isArray(m.parts)) {
-      content = m.parts
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text as string)
-        .join('\n');
-    } else if (typeof m.text === 'string') {
-      content = m.text;
-    }
-    return { role: m.role as 'user' | 'assistant', content };
-  });
-
-  const systemPrompt = `You are an elite Answer Engine powered by live web data, similar to Perplexity AI.
-
-CRITICAL RULES:
-1. NEVER claim you lack real-time data. You have live internet context provided below.
-2. Always write DETAILED, COMPREHENSIVE answers (minimum 150 words).
-3. Use rich Markdown: ## headers, **bold**, bullet lists, numbered lists, inline code.
-4. Cite sources inline as markdown links: [Source Title](url).
-5. ALWAYS end your response with a "### Follow-ups" section containing EXACTLY 3 bulleted questions that the user might want to ask next based on your answer. Format them as a simple bulleted list.
-
---- LIVE WEB RESULTS ---
-${webContext}
---- END WEB RESULTS ---`;
-
-  // ── Stream text via Groq then convert to UI message stream ──
   const result = streamText({
     model: groq('llama-3.3-70b-versatile'),
-    system: systemPrompt,
-    messages: modelMessages,
+    system: `You are an elite Answer Engine. You HAVE direct access to the live internet via the webSearch tool. 
+    
+    CRITICAL RULES:
+    1. NEVER say "I don't have access to real-time data" or mention a "knowledge cutoff". 
+    2. NEVER apologize for not knowing current events.
+    3. If a user asks about current events, news, sports scores, or recent facts, you MUST IMMEDIATELY trigger the webSearch tool.
+    4. Read the scraped markdown data carefully, then write a comprehensive, highly accurate response using Markdown formatting.`,
+    
+    messages: await convertToModelMessages(messages), 
+    stopWhen: isStepCount(5),
+    tools: {
+      webSearch: tool({
+        description: 'Search the live internet and scrape the top results for accurate information.',
+        inputSchema: z.object({
+          query: z.string().describe('The optimized search query to look up'),
+        }),
+        execute: async ({ query }) => {
+          console.log(`🌍 Scraping the web for: ${query}`);
+          try {
+            const searchResults = await app.search(query, {
+              limit: 2,
+              scrapeOptions: { formats: ['markdown'] }
+            });
+            const results = searchResults.web ?? [];
+            if (results.length === 0) return { error: "Failed to search." };
+            return { results: results.map((page: any) => ({
+              url: page.url, title: page.title, content: page.markdown?.substring(0, 3000) 
+            }))};
+          } catch (error) {
+            return { error: 'The search engine failed to return results.' };
+          }
+        },
+      }),
+    },
+    // 3. DATABASE: The onFinish Hook
+    // This automatically fires the millisecond the AI finishes streaming its answer to the UI
+    onFinish: async ({ text }) => {
+      if (chatId && text) {
+        await db.insert(messagesTable).values({
+          chatId: chatId,
+          role: 'assistant',
+          content: text,
+        });
+      }
+    }
   });
 
-  // toUIMessageStream is the SDK v7 bridge between streamText and useChat
-  const uiStream = toUIMessageStream({ stream: result.fullStream });
-
-  return createUIMessageStreamResponse({ stream: uiStream });
+  return result.toUIMessageStreamResponse();
 }
